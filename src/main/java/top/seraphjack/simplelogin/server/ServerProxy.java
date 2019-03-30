@@ -1,5 +1,7 @@
 package top.seraphjack.simplelogin.server;
 
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import top.seraphjack.simplelogin.CommonProxy;
@@ -19,6 +21,7 @@ public class ServerProxy extends CommonProxy {
         e.registerServerCommand(new SLCommand());
         // Start player login handler
         PlayerLoginHandler.instance();
+        MinecraftForge.EVENT_BUS.register(new ServerSideEventHandler());
     }
 
     @Override

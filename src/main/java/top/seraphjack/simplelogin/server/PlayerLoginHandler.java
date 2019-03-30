@@ -1,8 +1,7 @@
 package top.seraphjack.simplelogin.server;
 
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentTranslation;
-import net.minecraft.world.GameType;
+import net.minecraft.world.WorldSettings;
 import net.minecraftforge.fml.common.FMLCommonHandler;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
@@ -14,6 +13,7 @@ import top.seraphjack.simplelogin.server.capability.IPassword;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Collectors;
 
 @SideOnly(Side.SERVER)
 public class PlayerLoginHandler {
@@ -25,6 +25,17 @@ public class PlayerLoginHandler {
     private ConcurrentLinkedQueue<Login> loginList = new ConcurrentLinkedQueue<>();
     private Set<String> resetPasswordUsers = new HashSet<>();
 
+    private static EntityPlayerMP getPlayerByUsername(String name) {
+        EntityPlayerMP ret;
+        try {
+            ret = FMLCommonHandler.instance().getMinecraftServerInstance().getConfigurationManager().playerEntityList.stream()
+                    .filter(p -> p.getGameProfile().getName().equals(name)).collect(Collectors.toList()).get(0);
+        } catch (Throwable e) {
+            return null;
+        }
+        return ret;
+    }
+
     private PlayerLoginHandler() {
         PLAYER_HANDLER_THREAD = new Thread(() -> {
             while (alive) {
@@ -33,14 +44,14 @@ public class PlayerLoginHandler {
                 }
 
                 for (Login login : loginList) {
-                    EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUsername(login.name);
+                    EntityPlayerMP player = getPlayerByUsername(login.name);
                     if (player == null) {
                         loginList.remove(login);
                         return;
                     }
 
                     if (System.currentTimeMillis() - login.time >= SLConfig.server.secs * 1000) {
-                        player.connection.disconnect(new TextComponentTranslation("Login timed out."));
+                        player.playerNetServerHandler.kickPlayerFromServer("Login timed out.");
                     }
                 }
 
@@ -62,7 +73,7 @@ public class PlayerLoginHandler {
 
     public void login(String id, String pwd) {
         loginList.removeIf((l) -> l.name.equals(id));
-        EntityPlayerMP player = FMLCommonHandler.instance().getMinecraftServerInstance().getPlayerList().getPlayerByUsername(id);
+        EntityPlayerMP player = getPlayerByUsername(id);
         if (player == null) {
             return;
         }
@@ -74,7 +85,7 @@ public class PlayerLoginHandler {
         }
 
         if (pwd.length() >= 100) {
-            player.connection.disconnect(new TextComponentTranslation("Password too long."));
+            player.playerNetServerHandler.kickPlayerFromServer("Password too long.");
         } else if (capability.isFirst() || resetPasswordUsers.contains(id)) {
             capability.setFirst(false);
             capability.setPassword(pwd);
@@ -85,17 +96,17 @@ public class PlayerLoginHandler {
             setPlayerToSurvivalMode(player);
             SimpleLogin.logger.info("Player " + id + " has successfully logged in.");
         } else {
-            player.connection.disconnect(new TextComponentTranslation("Wrong Password."));
+            player.playerNetServerHandler.kickPlayerFromServer("Wrong password.");
         }
     }
 
     private void setPlayerToSurvivalMode(EntityPlayerMP player) {
-        FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(() -> player.setGameType(GameType.SURVIVAL));
+        FMLCommonHandler.instance().getMinecraftServerInstance().addScheduledTask(() -> player.setGameType(WorldSettings.GameType.SURVIVAL));
     }
 
     void addPlayerToLoginList(EntityPlayerMP player) {
         loginList.add(new Login(player.getGameProfile().getName()));
-        player.setGameType(GameType.SPECTATOR);
+        player.setGameType(WorldSettings.GameType.SPECTATOR);
     }
 
     boolean isPlayerInLoginList(String id) {

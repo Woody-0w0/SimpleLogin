@@ -2,7 +2,7 @@ package top.seraphjack.simplelogin.network;
 
 import io.netty.buffer.ByteBuf;
 import net.minecraft.entity.player.EntityPlayerMP;
-import net.minecraft.util.text.TextComponentTranslation;
+import net.minecraft.util.ChatComponentText;
 import net.minecraftforge.fml.common.network.ByteBufUtils;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessage;
 import net.minecraftforge.fml.common.network.simpleimpl.IMessageHandler;
@@ -39,16 +39,16 @@ public class MessageChangePassword implements IMessage {
     public static class MessageHandler implements IMessageHandler<MessageChangePassword, IMessage> {
         @Override
         public IMessage onMessage(MessageChangePassword message, MessageContext ctx) {
-            EntityPlayerMP player = ctx.getServerHandler().player;
+            EntityPlayerMP player = ctx.getServerHandler().playerEntity;
             IPassword cap = player.getCapability(CapabilityLoader.CAPABILITY_PASSWORD, null);
             if (cap != null) {
                 if (message.newPassword.length() >= 100) {
-                    player.sendMessage(new TextComponentTranslation("Password too long."));
+                    player.addChatMessage(new ChatComponentText("Password too long."));
                 } else if (cap.getPassword().equals(message.oldPassword)) {
                     cap.setPassword(message.newPassword);
-                    player.sendMessage(new TextComponentTranslation("Password Changed."));
+                    player.addChatMessage(new ChatComponentText("Password Changed."));
                 } else {
-                    player.sendMessage(new TextComponentTranslation("Wrong Password."));
+                    player.addChatMessage(new ChatComponentText("Wrong Password."));
                 }
             }
             return null;
