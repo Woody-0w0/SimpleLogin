@@ -19,7 +19,7 @@ public class SimpleLogin {
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent e) {
-        proxy.preInit();
+        proxy.preInit(e);
         logger = e.getModLog();
     }
 

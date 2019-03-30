@@ -1,38 +1,43 @@
 package top.seraphjack.simplelogin;
 
-import net.minecraftforge.common.config.Config;
-import net.minecraftforge.common.config.ConfigManager;
+import net.minecraftforge.common.config.Configuration;
 import net.minecraftforge.fml.client.event.ConfigChangedEvent;
-import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 
 import java.util.UUID;
 
-@Config(modid = SimpleLogin.MODID)
 public class SLConfig {
+    private static Configuration config;
 
-    @Config.Name("Server")
+    SLConfig(FMLPreInitializationEvent event) {
+        config = new Configuration(event.getSuggestedConfigurationFile());
+        loadConfig();
+    }
+
     public static Server server = new Server();
 
-    @Config.Name("Client")
     public static Client client = new Client();
 
     public static class Server {
-        @Config.Name("Login Timeout(s)")
         public int secs = 60;
     }
 
     public static class Client {
-        @Config.Name("Password")
         public String password = UUID.randomUUID().toString();
     }
 
-    @Mod.EventBusSubscriber(modid = SimpleLogin.MODID)
+    private static void loadConfig() {
+        if (config == null) return;
+        client.password = config.getString("password","client",UUID.randomUUID().toString(),"Your password");
+        server.secs = config.getInt("timeout","server",60,0,Integer.MAX_VALUE,"Login timeout");
+    }
+
     public static class ConfigSyncHandler {
         @SubscribeEvent
-        public static void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
-            if (event.getModID().equals(SimpleLogin.MODID)) {
-                ConfigManager.sync(SimpleLogin.MODID, Config.Type.INSTANCE);
+        public void onConfigChanged(ConfigChangedEvent.OnConfigChangedEvent event) {
+            if (event.modID.equals(SimpleLogin.MODID)) {
+                loadConfig();
             }
         }
     }

@@ -1,5 +1,7 @@
 package top.seraphjack.simplelogin;
 
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.fml.common.event.FMLPreInitializationEvent;
 import net.minecraftforge.fml.common.event.FMLServerStartingEvent;
 import net.minecraftforge.fml.common.event.FMLServerStoppingEvent;
 import top.seraphjack.simplelogin.network.NetworkLoader;
@@ -8,8 +10,9 @@ import javax.annotation.OverridingMethodsMustInvokeSuper;
 
 public abstract class CommonProxy {
     @OverridingMethodsMustInvokeSuper
-    public void preInit() {
-
+    public void preInit(FMLPreInitializationEvent event) {
+        MinecraftForge.EVENT_BUS.register(new SLConfig.ConfigSyncHandler());
+        new SLConfig(event);
     }
 
     @OverridingMethodsMustInvokeSuper
